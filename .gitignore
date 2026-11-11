@@ -1,0 +1,43 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/cache
+
+# Testing
+/coverage
+
+# Next.js build output & TypeScript cache
+/.next/
+/out/
+/build
+*.tsbuildinfo
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local environment files (contains DB URLs, S3 keys, bot tokens, secrets)
+.env*
+!.env.example
+
+# Neon local project/branch link state
+.neon
+
+# Local SQLite database & user uploaded payment receipts
+prisma/*.db
+prisma/*.db-journal
+/public/uploads/
+
+# Operating System & Certificates
+.DS_Store
+*.pem
+*.key
+Thumbs.db
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo

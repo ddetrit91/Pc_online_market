@@ -1,0 +1,38 @@
+{
+  "name": "pc-online-market",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "prisma:seed": "node prisma/seed.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1164.0",
+    "@neon/config": "^1.13.0",
+    "@neon/env": "^2.1.0",
+    "@prisma/client": "^6.4.0",
+    "@types/three": "^0.187.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.475.0",
+    "next": "^15.1.7",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.0.1",
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.19",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "autoprefixer": "^10.6.2",
+    "postcss": "^8.4.38",
+    "prisma": "^6.4.0",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.7.3"
+  }
+}

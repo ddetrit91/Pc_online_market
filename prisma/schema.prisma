@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id                    String   @id @default(cuid())
+  slug                  String   @unique
+  titleRu               String
+  titleUz               String
+  descriptionRu         String   @default("")
+  descriptionUz         String   @default("")
+  category              String   // CPU, GPU, MOTHERBOARD, RAM, STORAGE, PSU, CASE, COOLER
+  brand                 String
+  priceUzs              Int      // In Uzbek Som
+  imageUrl              String
+  inStock               Boolean  @default(true)
+  
+  // Compatibility specs
+  tdp                   Int?     // Watts (CPU, GPU)
+  socket                String?  // AM4, AM5, LGA1700, etc. (CPU, MOTHERBOARD)
+  chipset               String?  // B650, Z790, B550, etc.
+  formFactor            String?  // ATX, Micro-ATX, Mini-ITX (Motherboard, Case)
+  memoryType            String?  // DDR4, DDR5 (CPU, Motherboard, RAM)
+  ramSlots              Int?     // Number of slots on Motherboard
+  capacityGb            Int?     // RAM or Storage size in GB
+  modulesCount          Int?     // RAM modules (e.g. 2 for 2x16GB)
+  speedMhz              Int?     // RAM speed MHz
+  lengthMm              Int?     // GPU length in mm
+  maxGpuLength          Int?     // Case maximum GPU length supported in mm
+  coolerHeight          Int?     // Cooler height in mm
+  maxCoolerHeight       Int?     // Case max CPU cooler clearance in mm
+  wattage               Int?     // PSU wattage in W
+  efficiencyRating      String?  // 80 Plus Gold, Bronze, etc.
+  supportedSockets      String?  // Comma-separated sockets (Cooler)
+  supportedMotherboards String?  // Comma-separated formats (Case: "ATX,Micro-ATX,Mini-ITX")
+  benchmarkScore        Int?     // Synthetic score for FPS calculations
+  specsJson             String?  // Detailed specs JSON
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model Game {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  posterUrl       String
+  genre           String
+  cpuDemand       Float    @default(1.0) // 1.0 (average) to 2.2 (very CPU heavy like MS Flight Sim, Tarkov)
+  gpuDemand       Float    @default(1.0) // 1.0 to 2.5 (Cyberpunk, Alan Wake 2, Wukong)
+  baseFps1080p    Float    @default(60.0)
+  descriptionRu   String?
+  descriptionUz   String?
+  createdAt       DateTime @default(now())
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  phone        String?
+  role         String   @default("USER") // "USER" or "ADMIN"
+  orders       Order[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Order {
+  id                String   @id @default(cuid())
+  orderNumber       String   @unique
+  customerName      String
+  customerPhone     String
+  telegramUsername  String?
+  telegramChatId    String?
+  totalAmount       Int
+  status            String   @default("pending") // pending, paid, shipped, cancelled
+  buildData         String   // JSON string of all items
+  notes             String?
+  receiptSent       Boolean  @default(false)
+  receiptFileUrl    String?
+  receiptFileName   String?
+  userId            String?
+  user              User?    @relation(fields: [userId], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
