@@ -147,11 +147,12 @@ export const CatalogView: React.FC = () => {
     fetch(`/api/products${query}`)
       .then((res) => res.json())
       .then((data) => {
-        setProducts(data);
+        setProducts(Array.isArray(data) ? data : []);
         setLoading(false);
       })
       .catch((err) => {
         console.error(err);
+        setProducts([]);
         setLoading(false);
       });
   }, [selectedCategory]);

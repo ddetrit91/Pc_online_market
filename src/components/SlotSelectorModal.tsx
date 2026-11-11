@@ -34,11 +34,12 @@ export const SlotSelectorModal: React.FC<Props> = ({
     fetch(`/api/products?category=${category}`)
       .then((res) => res.json())
       .then((data) => {
-        setProducts(data);
+        setProducts(Array.isArray(data) ? data : []);
         setLoading(false);
       })
       .catch((err) => {
         console.error(err);
+        setProducts([]);
         setLoading(false);
       });
   }, [isOpen, category]);

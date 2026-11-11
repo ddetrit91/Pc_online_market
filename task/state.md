@@ -31,4 +31,6 @@
   - **Engineering & Trust Bento Strip:** 4 high-density value pillars directly under the hero banner.
   - **Ready-to-Ship Turnkey Rigs:** 3 curated flagship PC cards with gaming benchmarks and dual CTAs («В 3D Сборку» / «В корзину»).
   - **Builder Quick Starter:** Added 1-click preset loader in PC Builder when empty.
-  - **Verification:** All 4 routes return HTTP 200 with 122.2 KB CSS.
+  - **RBAC Auth & Security:** Added `User` (`USER` / `ADMIN`), signed HMAC cookies, guarded `/api/admin/*`, removed hardcoded secrets.
+  - **Vercel Readiness:** Configured `postinstall` & `build` (`prisma generate && next build`), `rhel-openssl-3.0.x` binaryTarget, and array-safe API responses.
+  - **GitHub:** Pushed clean repository to `https://github.com/ddetrit91/Pc_online_market.git`.

@@ -51,6 +51,11 @@
   - [x] **Trust & Engineering Bento Bar:** Added 4 feature pillars (3D WebGL, 100% Совместимость, Телеметрия 20 игр, Экспресс-сборка в Ташкенте).
   - [x] **Curated Ready-to-Ship Gaming PCs Section:** Added 3 flagship turnkey build cards with real hardware specs, FPS bars in top games, and 1-click loading into 3D Builder or shopping cart.
   - [x] **Builder Quick Starter:** Added 1-click preset build loader directly in the 3D builder when empty.
+- [x] **RBAC Auth, Security Hardening & Vercel Readiness:**
+  - [x] Added `User` model & RBAC (`USER` / `ADMIN`) via Node `scrypt` + HMAC-SHA256 cookies.
+  - [x] Removed hardcoded admin credentials and protected all `/api/admin/*` routes with `isAdminRequest`.
+  - [x] Added `postinstall` & `build: "prisma generate && next build"` plus `rhel-openssl-3.0.x` binaryTarget for Vercel.
+  - [x] Guarded client `fetch()` handlers (`Array.isArray`) in `CatalogView`, `FpsCalculatorView`, `SlotSelectorModal`, `BuilderView` to prevent runtime crashes if DB env vars are missing.
 
 ---
 

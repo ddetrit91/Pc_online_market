@@ -31,11 +31,12 @@ export const FpsCalculatorView: React.FC = () => {
     fetch('/api/games')
       .then((res) => res.json())
       .then((data) => {
-        setGames(data);
+        setGames(Array.isArray(data) ? data : []);
         setLoading(false);
       })
       .catch((err) => {
         console.error(err);
+        setGames([]);
         setLoading(false);
       });
   }, []);

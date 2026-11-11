@@ -144,7 +144,8 @@ export const BuilderView: React.FC = () => {
     setLoadingPreset(preset);
     try {
       const res = await fetch('/api/products');
-      const prods: ProductItem[] = await res.json();
+      const data = await res.json();
+      const prods: ProductItem[] = Array.isArray(data) ? data : [];
       const presetMap: SelectedParts = {};
 
       if (preset === 'apex') {
