@@ -83,9 +83,13 @@ model Order {
   status            String   @default("pending") // pending, paid, shipped, cancelled
   buildData         String   // JSON string of all items
   notes             String?
-  receiptSent       Boolean  @default(false)
+  receiptSent       Boolean   @default(false)
   receiptFileUrl    String?
   receiptFileName   String?
+  paymentMethod     String    @default("card_receipt") // "stripe" | "card_receipt"
+  stripeSessionId   String?   @unique
+  stripePaymentId   String?
+  paidAt            DateTime?
   userId            String?
   user              User?    @relation(fields: [userId], references: [id])
   createdAt         DateTime @default(now())

@@ -2,32 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { uploadReceiptToNeonStorage } from '@/lib/storage';
 import { getUserFromRequest } from '@/lib/auth';
-import fs from 'fs';
-import path from 'path';
-
-// Helper to get Telegram credentials dynamically from .env.local without needing server restarts
-function getTelegramEnv() {
-  let token = process.env.TELEGRAM_BOT_TOKEN || '';
-  let chatId = process.env.TELEGRAM_CHAT_ID || '';
-
-  try {
-    const envPath = path.resolve(process.cwd(), '.env.local');
-    if (fs.existsSync(envPath)) {
-      const content = fs.readFileSync(envPath, 'utf8');
-      const tokenMatch = content.match(/TELEGRAM_BOT_TOKEN=["']?([^"'\r\n]+)["']?/);
-      const chatMatch = content.match(/TELEGRAM_CHAT_ID=["']?([^"'\r\n]+)["']?/);
-      if (tokenMatch && tokenMatch[1]) token = tokenMatch[1].trim();
-      if (chatMatch && chatMatch[1]) chatId = chatMatch[1].trim();
-    }
-  } catch (e) {
-    console.error('Error reading .env.local dynamically:', e);
-  }
-
-  return {
-    botToken: token.trim().replace(/^["']|["']$/g, ''),
-    chatId: chatId.trim().replace(/^["']|["']$/g, ''),
-  };
-}
+import { sendOrderNotificationToTelegram } from '@/lib/telegram';
 
 export async function POST(request: Request) {
   try {
@@ -151,158 +126,12 @@ export async function POST(request: Request) {
       },
     });
 
-    // Get Telegram Bot credentials (ONLY sending to the ONE user in .env.local)
-    const { botToken, chatId } = getTelegramEnv();
-    let telegramSent = false;
-    let telegramError: string | null = null;
-
-    if (botToken && chatId) {
-      try {
-        const formattedTotal = new Intl.NumberFormat('ru-RU').format(totalPrice);
-        const dateStr = new Date().toLocaleString('ru-RU', { timeZone: 'Asia/Tashkent' });
-
-        // Beautiful formatted Telegram receipt text
-        let receiptText = `🧾 <b>ЭЛЕКТРОННЫЙ ЧЕК ЗАКАЗА</b>\n`;
-        receiptText += `🏪 <b>Магазин:</b> PC ULTRA MARKET (Tashkent)\n`;
-        receiptText += `━━━━━━━━━━━━━━━━━━━━━━\n`;
-        receiptText += `📋 <b>Номер заказа:</b> <code>#${orderNumber}</code>\n`;
-        receiptText += `📅 <b>Дата и время:</b> ${dateStr}\n`;
-        receiptText += `👤 <b>Покупатель:</b> ${customerName}\n`;
-        receiptText += `📞 <b>Телефон:</b> <code>${customerPhone}</code>\n`;
-        if (telegramUsername) {
-          const cleanUser = telegramUsername.replace('@', '');
-          receiptText += `💬 <b>Telegram:</b> <a href="https://t.me/${cleanUser}">@${cleanUser}</a>\n`;
-        }
-        if (receiptFileName) {
-          receiptText += `📎 <b>Прикреплен чек оплаты:</b> <i>${receiptFileName}</i>\n`;
-        }
-        receiptText += `━━━━━━━━━━━━━━━━━━━━━━\n`;
-        receiptText += `🛍️ <b>ПОЗИЦИИ ЗАКАЗА:</b>\n\n`;
-
-        itemsList.forEach((it, idx) => {
-          const itemPrice = new Intl.NumberFormat('ru-RU').format(it.priceUzs);
-          const qtyText = it.quantity && it.quantity > 1 ? ` (x${it.quantity})` : '';
-          receiptText += `${idx + 1}. <b>[${it.category}]</b> ${it.title}${qtyText}\n`;
-          receiptText += `   └ <i>${itemPrice} сум</i>\n`;
-        });
-
-        receiptText += `━━━━━━━━━━━━━━━━━━━━━━\n`;
-        receiptText += `💰 <b>ИТОГО К ОПЛАТЕ:</b> <b>${formattedTotal} сум</b>\n`;
-        receiptText += `📌 <b>Статус:</b> В обработке (Ожидает подтверждения менеджера)\n`;
-        receiptText += `━━━━━━━━━━━━━━━━━━━━━━\n`;
-        receiptText += `<i>Чек и квитанция оплаты сформированы автоматически.</i>`;
-
-        // Check if there is a file to send
-        if (receiptFile && fileBuffer) {
-          const isPdf =
-            receiptFile.type === 'application/pdf' ||
-            receiptFile.name.toLowerCase().endsWith('.pdf');
-          const isImage =
-            receiptFile.type.startsWith('image/') ||
-            /\.(jpg|jpeg|png|webp|gif)$/i.test(receiptFile.name);
-
-          // Telegram caption max length is 1024 chars
-          let caption = receiptText;
-          let needSeparateMessage = false;
-          if (caption.length > 1020) {
-            needSeparateMessage = true;
-            caption = `🧾 <b>Чек оплаты к заказу #${orderNumber}</b>\n👤 <b>Клиент:</b> ${customerName}\n📞 <b>Телефон:</b> ${customerPhone}\n💰 <b>Итого:</b> ${formattedTotal} сум\n📎 <b>Файл:</b> ${receiptFileName}`;
-          }
-
-          const tgFormData = new FormData();
-          tgFormData.append('chat_id', chatId);
-          tgFormData.append('caption', caption);
-          tgFormData.append('parse_mode', 'HTML');
-
-          const fileBlob = new Blob([new Uint8Array(fileBuffer)], {
-            type: receiptFile.type || (isPdf ? 'application/pdf' : 'image/jpeg'),
-          });
-
-          let sendEndpoint = `https://api.telegram.org/bot${botToken}/sendDocument`;
-          if (isImage) {
-            sendEndpoint = `https://api.telegram.org/bot${botToken}/sendPhoto`;
-            tgFormData.append('photo', fileBlob, receiptFileName || 'receipt.jpg');
-          } else {
-            tgFormData.append('document', fileBlob, receiptFileName || 'receipt.pdf');
-          }
-
-          const tgRes = await fetch(sendEndpoint, {
-            method: 'POST',
-            body: tgFormData,
-          });
-
-          const tgData = await tgRes.json();
-          if (tgData.ok) {
-            telegramSent = true;
-
-            // If we truncated the caption, send the full detailed receipt as a follow-up message
-            if (needSeparateMessage) {
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  chat_id: chatId,
-                  text: receiptText,
-                  parse_mode: 'HTML',
-                  disable_web_page_preview: true,
-                }),
-              });
-            }
-          } else {
-            console.error('Telegram file send error:', tgData);
-            // Fallback to sendMessage
-            const fallbackRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                chat_id: chatId,
-                text: receiptText + `\n\n⚠️ <i>(Файл чека сохранен в админке /admin: ${receiptFileName})</i>`,
-                parse_mode: 'HTML',
-                disable_web_page_preview: true,
-              }),
-            });
-            const fallbackData = await fallbackRes.json();
-            if (fallbackData.ok) {
-              telegramSent = true;
-            } else {
-              telegramError = tgData.description || fallbackData.description || 'Ошибка Telegram API';
-            }
-          }
-        } else {
-          // No file attached: send standard text receipt
-          const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: receiptText,
-              parse_mode: 'HTML',
-              disable_web_page_preview: true,
-            }),
-          });
-
-          const tgData = await tgRes.json();
-          if (tgData.ok) {
-            telegramSent = true;
-          } else {
-            telegramError = tgData.description || 'Ошибка Telegram API';
-            console.error('Telegram API error response:', tgData);
-          }
-        }
-
-        if (telegramSent) {
-          await prisma.order.update({
-            where: { id: order.id },
-            data: { receiptSent: true },
-          });
-        }
-      } catch (err: any) {
-        console.error('Telegram request error:', err);
-        telegramError = err?.message || 'Сетевая ошибка Telegram';
-      }
-    } else {
-      telegramError = 'В .env.local не заполнены TELEGRAM_BOT_TOKEN или TELEGRAM_CHAT_ID';
-    }
+    // Send order notification + optional receipt file to Telegram manager
+    const { sent: telegramSent, error: telegramError } = await sendOrderNotificationToTelegram({
+      order,
+      fileBuffer,
+      fileMimeType: receiptFile?.type || null,
+    });
 
     return NextResponse.json({
       success: true,

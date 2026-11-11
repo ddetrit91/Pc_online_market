@@ -56,6 +56,11 @@
   - [x] Removed hardcoded admin credentials and protected all `/api/admin/*` routes with `isAdminRequest`.
   - [x] Added `postinstall` & `build: "prisma generate && next build"` plus `rhel-openssl-3.0.x` binaryTarget for Vercel.
   - [x] Guarded client `fetch()` handlers (`Array.isArray`) in `CatalogView`, `FpsCalculatorView`, `SlotSelectorModal`, `BuilderView` to prevent runtime crashes if DB env vars are missing.
+- [x] **Stripe Payment Gateway & Webhook Integration:**
+  - [x] Installed official `stripe` Node SDK (`^23.1.0`) and added `paymentMethod`, `stripeSessionId`, `stripePaymentId`, `paidAt` fields to `Order` in Neon PostgreSQL.
+  - [x] Created `/api/stripe/checkout`, `/api/stripe/webhook` (signature verified), and `/api/stripe/verify-session`.
+  - [x] Extracted shared Telegram receipt delivery helper `src/lib/telegram.ts`.
+  - [x] Built `/payment/success` and `/payment/cancel` pages and added Stripe / Click-Payme payment switcher to `CheckoutModal` and `CartDrawer`.
 
 ---
 

@@ -32,5 +32,6 @@
   - **Ready-to-Ship Turnkey Rigs:** 3 curated flagship PC cards with gaming benchmarks and dual CTAs («В 3D Сборку» / «В корзину»).
   - **Builder Quick Starter:** Added 1-click preset loader in PC Builder when empty.
   - **RBAC Auth & Security:** Added `User` (`USER` / `ADMIN`), signed HMAC cookies, guarded `/api/admin/*`, removed hardcoded secrets.
-  - **Vercel Readiness:** Configured `postinstall` & `build` (`prisma generate && next build`), `rhel-openssl-3.0.x` binaryTarget, and array-safe API responses.
-  - **GitHub:** Pushed clean repository to `https://github.com/ddetrit91/Pc_online_market.git`.
+  - **Vercel Readiness:** Configured `postinstall` & `build` (`prisma generate && next build`), `rhel-openssl-3.0.x` binaryTarget, `vercel.json`, and array-safe API responses.
+  - **Stripe Integration:** Added Stripe Checkout (`/api/stripe/checkout`), Webhook (`/api/stripe/webhook`), Session Verify (`/api/stripe/verify-session`), `/payment/success` & `/payment/cancel`, plus UI switchers in `CheckoutModal` and `CartDrawer`.
+  - **GitHub:** Repository live at `https://github.com/ddetrit91/Pc_online_market.git`.

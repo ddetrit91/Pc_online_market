@@ -663,6 +663,17 @@ export default function AdminPortalPage() {
                                 <ExternalLink className="h-3.5 w-3.5" />
                               </a>
                             </div>
+                          ) : o.paymentMethod === 'stripe' ? (
+                            <div className="flex flex-col gap-0.5">
+                              <span className="inline-flex items-center gap-1 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-2.5 py-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 w-fit">
+                                Stripe Онлайн
+                              </span>
+                              {o.stripePaymentId && (
+                                <span className="text-[10px] font-mono text-gray-400 truncate max-w-[140px]" title={o.stripePaymentId}>
+                                  {o.stripePaymentId}
+                                </span>
+                              )}
+                            </div>
                           ) : (
                             <span className="text-gray-400 italic text-[11px]">Не прикреплен</span>
                           )}

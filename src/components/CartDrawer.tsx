@@ -37,6 +37,7 @@ export const CartDrawer: React.FC = () => {
   const { lang, t } = useI18n();
 
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'card_receipt'>('stripe');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('+998 ');
   const [telegramUsername, setTelegramUsername] = useState('');
@@ -107,6 +108,7 @@ export const CartDrawer: React.FC = () => {
 
     // Format parts map for API
     const itemsList = items.map((it) => ({
+      id: it.product.id,
       category: it.product.category,
       titleRu: it.product.titleRu,
       titleUz: it.product.titleUz,
@@ -116,6 +118,28 @@ export const CartDrawer: React.FC = () => {
     }));
 
     try {
+      if (paymentMethod === 'stripe') {
+        const res = await fetch('/api/stripe/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerName: customerName.trim(),
+            customerPhone: customerPhone.trim(),
+            telegramUsername: telegramUsername.trim(),
+            items: itemsList,
+            lang,
+            source: 'cart',
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Ошибка оплаты через Stripe');
+        if (data.url) {
+          window.location.href = data.url;
+          return;
+        }
+        throw new Error('Stripe не вернул URL для оплаты');
+      }
+
       const formData = new FormData();
       formData.append('customerName', customerName.trim());
       formData.append('customerPhone', customerPhone.trim());
@@ -275,69 +299,117 @@ export const CartDrawer: React.FC = () => {
                   />
                 </div>
 
-                {/* Card Payment Info */}
-                <div className="rounded-xl border border-[#09aff4]/30 bg-[#0d1857]/50 p-3.5 text-xs space-y-1">
-                  <div className="flex items-center gap-1.5 font-bold text-[#09aff4]">
-                    <CreditCard className="h-3.5 w-3.5" />
-                    <span>Оплата на карту Click / Payme:</span>
-                  </div>
-                  <p className="font-mono text-neutral-900 dark:text-white font-bold tracking-wider">8600 5304 9821 7740</p>
-                  <p className="text-[10px] text-neutral-500 dark:text-slate-400">ООО &quot;PC ULTRA MARKET&quot;</p>
-                </div>
-
-                {/* Receipt File Upload */}
-                <div>
-                  <label className="text-xs font-bold text-neutral-700 dark:text-slate-300 block mb-1 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <FileText className="h-3.5 w-3.5 text-[#09aff4]" />
-                      <span>{lang === 'uz' ? 'To\'lov cheki / kvitansiya' : 'Чек оплаты / квитанция'}</span>
-                    </span>
-                    <span className="text-[10px] text-neutral-400 font-normal">JPG, PNG, PDF</span>
-                  </label>
-
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    accept="image/png,image/jpeg,image/webp,application/pdf"
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        handleFileChange(e.target.files[0]);
-                      }
-                    }}
-                  />
-
-                  {!receiptFile ? (
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full border-2 border-dashed border-neutral-300 dark:border-[#09aff4]/30 rounded-xl p-3 text-center hover:border-[#09aff4] transition-colors flex items-center justify-center gap-2 text-xs text-neutral-600 dark:text-slate-300 bg-neutral-50 dark:bg-[#060922]"
-                    >
-                      <UploadCloud className="h-4 w-4 text-[#09aff4]" />
-                      <span>{lang === 'uz' ? 'Chek faylini tanlang' : 'Прикрепить скриншот или PDF'}</span>
-                    </button>
-                  ) : (
-                    <div className="flex items-center justify-between p-2 rounded-xl border border-neutral-200 dark:border-[#09aff4]/30 bg-neutral-50 dark:bg-[#060922] text-xs">
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        {previewUrl ? (
-                          <img src={previewUrl} alt="" className="h-8 w-8 rounded-lg object-cover shrink-0" />
-                        ) : (
-                          <FileText className="h-5 w-5 text-red-500 shrink-0" />
-                        )}
-                        <span className="font-semibold text-neutral-900 dark:text-white truncate max-w-[180px]">
-                          {receiptFile.name}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleFileChange(null)}
-                        className="text-neutral-400 hover:text-rose-500 p-1"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
+                {/* Payment Method Switcher */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('stripe')}
+                    className={`rounded-xl border p-2.5 text-left transition-all ${
+                      paymentMethod === 'stripe'
+                        ? 'border-[#09aff4] bg-[#09aff4]/10 text-neutral-900 dark:text-white'
+                        : 'border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-[#060922] text-neutral-500 dark:text-slate-400'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 text-xs font-bold">
+                      <CreditCard className="h-3.5 w-3.5 text-[#09aff4]" />
+                      <span>Stripe Карта</span>
                     </div>
-                  )}
+                    <div className="text-[10px] opacity-75 mt-0.5">Онлайн оплата</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('card_receipt')}
+                    className={`rounded-xl border p-2.5 text-left transition-all ${
+                      paymentMethod === 'card_receipt'
+                        ? 'border-emerald-500 bg-emerald-500/10 text-neutral-900 dark:text-white'
+                        : 'border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-[#060922] text-neutral-500 dark:text-slate-400'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 text-xs font-bold">
+                      <FileText className="h-3.5 w-3.5 text-emerald-500" />
+                      <span>Click / Payme</span>
+                    </div>
+                    <div className="text-[10px] opacity-75 mt-0.5">Скриншот чека</div>
+                  </button>
                 </div>
+
+                {paymentMethod === 'stripe' ? (
+                  <div className="rounded-xl border border-[#09aff4]/30 bg-[#0d1857]/40 p-3.5 text-xs space-y-1">
+                    <div className="flex items-center justify-between font-bold text-[#09aff4]">
+                      <span>Stripe Checkout (Visa / MC)</span>
+                      <span className="font-mono">≈ ${(totalCartPrice / 12800).toFixed(2)}</span>
+                    </div>
+                    <p className="text-[11px] text-neutral-500 dark:text-slate-300">
+                      Безопасный переход на страницу оплаты Stripe с мгновенным подтверждением заказа.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Card Payment Info */}
+                    <div className="rounded-xl border border-[#09aff4]/30 bg-[#0d1857]/50 p-3.5 text-xs space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-[#09aff4]">
+                        <CreditCard className="h-3.5 w-3.5" />
+                        <span>Оплата на карту Click / Payme:</span>
+                      </div>
+                      <p className="font-mono text-neutral-900 dark:text-white font-bold tracking-wider">8600 5304 9821 7740</p>
+                      <p className="text-[10px] text-neutral-500 dark:text-slate-400">ООО &quot;PC ULTRA MARKET&quot;</p>
+                    </div>
+
+                    {/* Receipt File Upload */}
+                    <div>
+                      <label className="text-xs font-bold text-neutral-700 dark:text-slate-300 block mb-1 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <FileText className="h-3.5 w-3.5 text-[#09aff4]" />
+                          <span>{lang === 'uz' ? 'To\'lov cheki / kvitansiya' : 'Чек оплаты / квитанция'}</span>
+                        </span>
+                        <span className="text-[10px] text-neutral-400 font-normal">JPG, PNG, PDF</span>
+                      </label>
+
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept="image/png,image/jpeg,image/webp,application/pdf"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            handleFileChange(e.target.files[0]);
+                          }
+                        }}
+                      />
+
+                      {!receiptFile ? (
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-full border-2 border-dashed border-neutral-300 dark:border-[#09aff4]/30 rounded-xl p-3 text-center hover:border-[#09aff4] transition-colors flex items-center justify-center gap-2 text-xs text-neutral-600 dark:text-slate-300 bg-neutral-50 dark:bg-[#060922]"
+                        >
+                          <UploadCloud className="h-4 w-4 text-[#09aff4]" />
+                          <span>{lang === 'uz' ? 'Chek faylini tanlang' : 'Прикрепить скриншот или PDF'}</span>
+                        </button>
+                      ) : (
+                        <div className="flex items-center justify-between p-2 rounded-xl border border-neutral-200 dark:border-[#09aff4]/30 bg-neutral-50 dark:bg-[#060922] text-xs">
+                          <div className="flex items-center gap-2 overflow-hidden">
+                            {previewUrl ? (
+                              <img src={previewUrl} alt="" className="h-8 w-8 rounded-lg object-cover shrink-0" />
+                            ) : (
+                              <FileText className="h-5 w-5 text-red-500 shrink-0" />
+                            )}
+                            <span className="font-semibold text-neutral-900 dark:text-white truncate max-w-[180px]">
+                              {receiptFile.name}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleFileChange(null)}
+                            className="text-neutral-400 hover:text-rose-500 p-1"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
 
                 <div className="pt-2">
                   <button
@@ -347,6 +419,11 @@ export const CartDrawer: React.FC = () => {
                   >
                     {loading ? (
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    ) : paymentMethod === 'stripe' ? (
+                      <>
+                        <CreditCard className="h-4 w-4" />
+                        <span>{lang === 'uz' ? "Stripe orqali to'lash" : 'Оплатить через Stripe'}</span>
+                      </>
                     ) : (
                       <>
                         <Send className="h-4 w-4" />

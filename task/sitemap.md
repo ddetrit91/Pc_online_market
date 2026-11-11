@@ -14,6 +14,8 @@
 | `/builder` | `src/app/builder/page.tsx` | Public | **Конфигуратор ПК (PC Builder)**. Интерактивная 3D-модель корпуса, 2D-чертеж, проверка совместимости в реальном времени, подсчет суммарного TDP и стоимости сборки. | `BuilderView.tsx`, `PcViewer3D.tsx`, `PcBlueprint2D.tsx`, `SlotSelectorModal.tsx`, `CheckoutModal.tsx` |
 | `/fps` | `src/app/fps/page.tsx` | Public | **FPS Калькулятор в играх**. Оценка производительности сборки (CPU + GPU) в 20+ актуальных играх при разрешениях 1080p, 1440p, 4K на Ultra/Medium настройках. | `FpsCalculatorView.tsx` |
 | `/admin` | `src/app/admin/page.tsx` | Admin | **Панель управления (Admin Dashboard)**. CRUD комплектующих, управление заказами клиентов, аналитика, база игр и пользователи. | `AdminView`, `ProductTable`, `OrderTable` |
+| `/payment/success` | `src/app/payment/success/page.tsx` | Public | **Успешная оплата Stripe**. Верификация Checkout Session, очистка корзины/сборки и отображение статуса заказа. | `PaymentSuccessPage` |
+| `/payment/cancel` | `src/app/payment/cancel/page.tsx` | Public | **Отмена оплаты Stripe**. Экран возврата в корзину или 3D-конструктор при отмене оплаты. | `PaymentCancelPage` |
 | `/secret-admin-portal` | `src/app/secret-admin-portal/page.tsx` | Hidden / Admin | **Скрытый портал авторизации администратора**. Авторизация по PIN-коду и мастер-паролю для экстренного доступа. | `SecretAdminView` |
 | `/_not-found` | `src/app/not-found.tsx` | Public | **Страница 404 (Не найдено)**. Стилизованная кибер-страница отсутствующего маршрута с кнопкой возврата в каталог. | `NotFound` |
 
@@ -32,6 +34,9 @@
 | `GET` | `/api/orders` | `src/app/api/orders/route.ts` | Получение истории заказов |
 | `POST` | `/api/verify-compatibility` | `src/app/api/verify-compatibility/route.ts` | Серверная валидация совместимости сокета, типа памяти, мощности БП и длины видеокарты |
 | `GET` | `/api/neon-status` | `src/app/api/neon-status/route.ts` | Проверка статуса соединения с базой данных Neon PostgreSQL |
+| `POST` | `/api/stripe/checkout` | `src/app/api/stripe/checkout/route.ts` | Создание платежной сессии Stripe Checkout с проверкой цен по базе данных |
+| `POST` | `/api/stripe/webhook` | `src/app/api/stripe/webhook/route.ts` | Вебхук Stripe (`checkout.session.completed`, верификация `stripe-signature`, автообновление заказа и уведомление в Telegram) |
+| `GET` | `/api/stripe/verify-session` | `src/app/api/stripe/verify-session/route.ts` | Верификация статуса оплаты Stripe Checkout Session после возврата пользователя |
 
 ### 2.2 Authentication APIs
 
